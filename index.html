@@ -1,0 +1,732 @@
+TEST123<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palma Properties — Калькулятор рассрочки</title>
+<style>
+  :root{
+    --dark:#685446;
+    --dark-2:#7C6656;
+    --dark-deep:#4E3F34;
+    --accent:#B98C50;
+    --beige:#DABFA6;
+    --beige-soft:#EFE4D3;
+    --bg:#F5EEE3;
+    --card:#FFFFFF;
+    --ink:#3E332B;
+    --muted:#998A79;
+    --line:#EADFCF;
+    --line-strong:#DBCBB4;
+    --ring:rgba(104,84,70,.26);
+    --shadow:0 18px 40px -22px rgba(78,63,52,.5);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(900px 520px at 100% -10%, #EFE2CD 0%, transparent 55%),
+      radial-gradient(700px 480px at -10% 0%, #F0E7D6 0%, transparent 50%),
+      var(--bg);
+    color:var(--ink);line-height:1.5;padding:28px 16px 60px;min-height:100vh;position:relative;
+  }
+  /* Водяной знак Palma Properties (защита от копирования) */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='170'><text x='8' y='95' font-family='Arial, sans-serif' font-size='20' font-weight='700' fill='%23685446' fill-opacity='0.05' transform='rotate(-20 160 85)'>Palma Properties</text></svg>");
+  }
+  .wrap{max-width:780px;margin:0 auto;position:relative;z-index:1}
+
+  /* Header */
+  .hero{
+    background:linear-gradient(135deg,#EAD8C0 0%,#DFC6A9 55%,#CFB693 100%);
+    color:var(--dark-deep);border-radius:22px;padding:26px 28px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .hero:before{
+    content:"";position:absolute;right:-70px;top:-80px;width:240px;height:240px;
+    background:radial-gradient(circle, rgba(104,84,70,.12), transparent 70%);
+  }
+  .brand-lockup{position:relative;z-index:1}
+  .brand-lockup svg{height:56px;width:auto;max-width:100%;display:block}
+  .brand-sub{position:relative;z-index:1;margin-top:16px;font-size:21px;font-weight:800;color:var(--dark-deep);letter-spacing:-.01em}
+  .hero p.tag{position:relative;z-index:1;margin-top:8px;font-size:14px;color:#6E5D4C;max-width:92%}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:0 10px 30px -24px rgba(78,63,52,.5);padding:22px;margin-top:18px;
+  }
+  .section-title{
+    font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--dark);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+  }
+  .section-title .bar{width:22px;height:3px;border-radius:3px;background:var(--accent)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1 / -1}
+  label{font-size:13.5px;font-weight:600;color:#5A4C40}
+  label .opt{font-weight:500;color:var(--muted)}
+  .input-shell{position:relative;display:flex;align-items:center}
+  .input-shell .unit{position:absolute;right:14px;font-size:13px;color:var(--muted);font-weight:600;pointer-events:none}
+  input[type=text],input[type=number]{
+    width:100%;padding:12px 14px;font-size:15px;color:var(--ink);
+    background:#FDFBF7;border:1.5px solid var(--line-strong);border-radius:11px;
+    transition:border-color .15s, box-shadow .15s;font-family:inherit;
+  }
+  input.has-unit{padding-right:48px}
+  input::placeholder{color:#BEB09C}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--ring)}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+
+  .pills{display:flex;flex-wrap:wrap;gap:9px}
+  .pill{
+    flex:1 1 auto;min-width:84px;text-align:center;cursor:pointer;user-select:none;
+    padding:11px 12px;border-radius:11px;font-size:14px;font-weight:600;
+    background:#F6F0E6;border:1.5px solid var(--line-strong);color:#6A5C4E;transition:all .15s;
+  }
+  .pill:hover{border-color:var(--accent);color:var(--dark)}
+  .pill.active{
+    background:linear-gradient(135deg,#7C6656,#685446);color:#F3EAD9;border-color:transparent;
+    box-shadow:0 8px 18px -10px rgba(78,63,52,.8)
+  }
+  .hint-note{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .divider{height:1px;background:var(--line);margin:20px 0}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    cursor:pointer;font-size:13px;font-weight:600;color:var(--dark);
+    background:var(--beige-soft);border:1px dashed #CDB78F;border-radius:999px;
+    padding:7px 13px;transition:all .15s;
+  }
+  .chip:hover{background:#E7D8BF;border-style:solid}
+
+  .svo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media(max-width:560px){.svo-grid{grid-template-columns:1fr}}
+  .svo-btn{
+    cursor:pointer;user-select:none;text-align:center;padding:13px 10px;border-radius:12px;
+    background:#F6F0E6;border:1.5px solid var(--line-strong);transition:all .15s;
+  }
+  .svo-btn .t{display:block;font-size:13.5px;font-weight:700;color:#5A4C40}
+  .svo-btn .d{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .svo-btn:hover{border-color:var(--accent)}
+  .svo-btn.active{background:linear-gradient(135deg,#7C6656,#685446);border-color:transparent}
+  .svo-btn.active .t,.svo-btn.active .d{color:#F3EAD9}
+
+  .calc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  @media(max-width:560px){.calc-row{grid-template-columns:1fr}}
+  .btn{cursor:pointer;border:none;font-family:inherit;font-size:15px;font-weight:700;
+    padding:15px 16px;border-radius:13px;transition:transform .08s, box-shadow .15s, background .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:linear-gradient(135deg,#7C6656,#685446);color:#F3EAD9;
+    box-shadow:0 12px 24px -12px rgba(78,63,52,.85)}
+  .btn-primary:hover{box-shadow:0 16px 30px -12px rgba(78,63,52,.95)}
+  .btn-outline{background:#fff;color:var(--dark);border:1.5px solid var(--dark)}
+  .btn-outline:hover{background:#F5EFE6}
+  .error{display:none;margin-top:14px;padding:12px 14px;border-radius:11px;
+    background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C;font-size:14px;font-weight:600}
+
+  #output.hidden{display:none}
+  .result-hero{
+    background:linear-gradient(135deg,#FBF4E9,#F1E4CF);border:1px solid #E4D3B6;
+    border-radius:14px;padding:20px;text-align:center;
+  }
+  .result-hero .lbl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+  .result-hero .big{font-size:38px;font-weight:800;letter-spacing:-.02em;color:var(--dark);margin-top:4px}
+  .result-hero .sub{font-size:14px;color:#7E6F5C;margin-top:4px}
+  .result-hero .sum{margin-top:12px;font-size:15px;color:#5A4C40}
+  .result-hero .sum b{color:var(--dark)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+  .btn-copy{cursor:pointer;border:1.5px solid var(--dark);background:#fff;color:var(--dark);
+    font-weight:700;font-size:14px;padding:10px 16px;border-radius:11px;font-family:inherit;transition:background .15s}
+  .btn-copy:hover{background:#F5EFE6}
+  .toggle{cursor:pointer;background:none;border:none;color:var(--muted);font-weight:600;font-size:14px;
+    font-family:inherit;display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+  .toggle:hover{color:var(--dark)}
+  .copy-note{font-size:13px;color:var(--dark);font-weight:700;display:none}
+  .rows{margin-top:16px;border-top:1px dashed var(--line-strong);padding-top:6px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .k{font-size:14px;color:#6A5C4E}
+  .row .v{font-size:15px;font-weight:700;color:var(--ink);text-align:right}
+  .row.total .v{color:var(--dark)}
+
+  /* Прайс по этажам */
+  .price-table{border:1.5px solid var(--line-strong);border-radius:12px;overflow:hidden;background:#fff}
+  .pt-caption{background:var(--dark);color:#F3EAD9;font-weight:800;text-align:center;
+    padding:11px 10px;font-size:13.5px;letter-spacing:.06em;text-transform:uppercase}
+  .pt-head{display:grid;grid-template-columns:1fr 1fr 1.3fr;background:var(--beige);
+    color:var(--dark-deep);font-weight:800;font-size:13.5px;text-align:center}
+  .pt-head>div{padding:9px 8px;border-right:1px solid rgba(104,84,70,.22)}
+  .pt-head>div:last-child{border-right:none}
+  .pt-head .span2{grid-column:span 2}
+  .pt-row{display:grid;grid-template-columns:1fr 1fr 1.3fr 40px;border-top:1px solid var(--line-strong)}
+  .pt-head{grid-template-columns:1fr 1fr 1.3fr 40px}
+  .pt-del{border:none;background:#FDFBF7;color:#A08E78;font-size:20px;line-height:1;cursor:pointer;
+    font-family:inherit;padding:0}
+  .pt-del:hover{color:#B91C1C;background:#FEF2F2}
+  .pt-del[disabled]{visibility:hidden}
+  .pt-add{margin-top:10px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    border:1.5px dashed var(--line-strong);background:#FDFBF7;color:var(--dark);font-weight:700;
+    font-size:14px;padding:10px 16px;border-radius:11px;font-family:inherit;width:100%;justify-content:center}
+  .pt-add:hover{border-color:var(--accent);background:#FBF4E9}
+  .pt-add .plus{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+    background:var(--dark);color:#F3EAD9;font-size:16px;font-weight:800;line-height:1}
+
+  /* Сводка по объекту в результатах */
+  .obj-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .obj-summary .chip{display:inline-flex;flex-direction:column;gap:2px;background:#FBF5EA;
+    border:1px solid #E4D3B6;border-radius:12px;padding:8px 14px;min-width:0}
+  .obj-summary .chip .k{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#A08E78}
+  .obj-summary .chip .v{font-size:16px;font-weight:800;color:var(--dark-deep);word-break:break-word}
+  .obj-summary .chip.name{flex:1 1 100%}
+  .v-area{font-size:12.5px;color:#7E6F5C;margin-top:6px}
+
+  .copy-final{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+  .btn-copy-big{cursor:pointer;width:100%;border:none;border-radius:13px;padding:16px 18px;
+    background:linear-gradient(135deg,#7C6656,#685446);color:#F6EFE1;font-family:inherit;
+    font-size:16px;font-weight:800;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:10px;
+    box-shadow:0 10px 22px -12px rgba(40,30,22,.8)}
+  .btn-copy-big:active{transform:translateY(1px)}
+  .btn-copy-big.done{background:linear-gradient(135deg,#5E7A55,#4C6644)}
+  .btn-share{cursor:pointer;width:100%;border:1.5px solid var(--dark);background:#fff;color:var(--dark);
+    border-radius:13px;padding:13px 18px;font-family:inherit;font-size:15px;font-weight:700;display:none}
+  .copy-preview{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:#5A4C40;background:#FDFBF7;
+    border:1px dashed var(--line-strong);border-radius:12px;padding:12px 14px;display:none}
+  .copy-preview.on{display:block}
+  .preview-toggle{cursor:pointer;background:none;border:none;color:var(--muted);font-weight:600;font-size:13.5px;
+    font-family:inherit;align-self:center}
+  .pt-row input{border:none;border-right:1px solid var(--line-strong);border-radius:0;
+    text-align:center;background:#FDFBF7;font-weight:600;padding:12px 8px}
+  .pt-row input:last-child{border-right:none}
+  .pt-row input:focus{box-shadow:inset 0 0 0 2px var(--accent)}
+  .pt-row input.pt-price{background:#fff}
+
+  /* Варианты результата */
+  .variant{border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;margin-top:14px;background:#fff}
+  .v-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    background:linear-gradient(135deg,#7C6656,#685446);color:#F3EAD9;padding:12px 14px}
+  .v-floors{display:inline-flex;align-items:baseline;gap:9px;background:#FBF5EA;
+    border-radius:999px;padding:7px 17px;box-shadow:0 7px 16px -9px rgba(40,30,22,.9)}
+  .v-floors .cap{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#A08E78}
+  .v-floors .num{font-size:19px;font-weight:800;color:var(--dark-deep);letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums}
+  .v-head .p{font-size:14px;font-weight:700;color:#F6EFE1;font-variant-numeric:tabular-nums}
+  .row .v .pct{font-size:12.5px;font-weight:700;color:var(--accent);margin-left:6px}
+  .v-main{background:linear-gradient(135deg,#FBF4E9,#F1E4CF);padding:16px;text-align:center}
+  .v-main .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+  .v-main .big{font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--dark);margin-top:2px}
+  .v-main .sub{font-size:13px;color:#7E6F5C;margin-top:2px}
+  .variant .rows{margin-top:0;border-top:none;padding:2px 16px 8px}
+  .v-details{display:none}
+  #output.details-on .v-details{display:block}
+  #output:not(.details-on) .variant .row.total{border-bottom:none}
+  .v-details .row:last-child{border-bottom:none}
+
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:26px;line-height:1.7}
+  footer .fb{color:var(--dark);font-weight:700;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="brand-lockup"><svg xmlns="http://www.w3.org/2000/svg" viewBox="245 440 610 205">
+  <g>
+    <g>
+      <path fill="#685446" d="M504.85,490.06h21.81c8.11,0,14.41,1.62,18.9,4.87,4.49,3.24,6.74,8.05,6.74,14.42,0,4.56-1.24,8.33-3.73,11.31-2.48,2.98-5.66,5.16-9.53,6.53-3.87,1.37-7.89,2.06-12.05,2.06h-7.01v17.8h-15.12v-56.98ZM525.23,523.64c3.65,0,6.35-1.01,8.11-3.02,1.76-2.02,2.63-5.6,2.63-10.74s-.88-8.85-2.63-10.96c-1.75-2.1-4.46-3.16-8.11-3.16h-5.26v27.88h5.26Z"/>
+      <path fill="#685446" d="M552.52,547.05l23.67-56.98h16.77l22.13,56.98h-16l-6.14-15.95h-24.77l-6.46,15.95h-9.21ZM570.38,525.57h20.49l-9.75-26.83h-.22l-10.52,26.83Z"/>
+      <path fill="#685446" d="M625.49,547.05v-56.98h15.12v50.67h27.61v6.31h-42.74Z"/>
+      <path fill="#685446" d="M677.98,547.05l.88-56.98h18.3l19.94,41.99h.44l19.61-41.99h16.98l.77,56.98h-14.79l-.77-43.13h-.33l-19.83,43.13h-11.29l-19.83-43.13h-.33l-.33,43.13h-9.43Z"/>
+      <path fill="#685446" d="M765.43,547.05l23.67-56.98h16.77l22.13,56.98h-16l-6.14-15.95h-24.77l-6.46,15.95h-9.21ZM783.29,525.57h20.49l-9.75-26.83h-.22l-10.52,26.83Z"/>
+      <path fill="#685446" d="M504.85,568.09h8.72c3.24,0,5.77.65,7.56,1.95,1.8,1.3,2.7,3.22,2.7,5.77,0,1.82-.5,3.33-1.49,4.52s-2.26,2.06-3.81,2.61c-1.55.55-3.16.82-4.82.82h-2.81v7.12h-6.05v-22.79ZM513,581.52c1.46,0,2.54-.4,3.24-1.21.7-.81,1.05-2.24,1.05-4.3s-.35-3.54-1.05-4.38c-.7-.84-1.78-1.26-3.24-1.26h-2.1v11.15h2.1Z"/>
+      <path fill="#685446" d="M528.21,568.09h8.77c3.21,0,5.73.63,7.54,1.88,1.81,1.25,2.72,3.01,2.72,5.28,0,1.47-.45,2.75-1.36,3.84-.91,1.09-2.09,1.93-3.55,2.54l6.57,9.26h-6.97l-5.35-8.28h-2.32v8.28h-6.05v-22.79ZM536.49,580.29c1.08,0,1.92-.15,2.52-.44.6-.29,1.03-.79,1.29-1.49.26-.7.4-1.67.4-2.91,0-1.82-.33-3.13-.99-3.91-.66-.78-1.77-1.17-3.35-1.17h-2.1v9.92h2.24Z"/>
+      <path fill="#685446" d="M555.1,588.13c-2.23-2.09-3.35-4.96-3.35-8.61s1.12-6.52,3.35-8.63c2.23-2.1,5.41-3.16,9.53-3.16s7.36,1.06,9.62,3.17c2.26,2.12,3.4,4.98,3.4,8.61s-1.13,6.49-3.4,8.59c-2.26,2.1-5.47,3.16-9.62,3.16s-7.3-1.05-9.53-3.14ZM569.48,586.58c.98-1.46,1.47-3.82,1.47-7.07s-.5-5.58-1.49-7.05c-.99-1.47-2.6-2.21-4.82-2.21s-3.78.74-4.76,2.21c-.98,1.47-1.47,3.82-1.47,7.05s.48,5.61,1.45,7.07c.97,1.46,2.56,2.19,4.78,2.19s3.87-.73,4.84-2.19Z"/>
+      <path fill="#685446" d="M582.61,568.09h8.72c3.24,0,5.77.65,7.56,1.95,1.8,1.3,2.7,3.22,2.7,5.77,0,1.82-.5,3.33-1.49,4.52-.99,1.19-2.26,2.06-3.81,2.61-1.55.55-3.16.82-4.82.82h-2.81v7.12h-6.05v-22.79ZM590.76,581.52c1.46,0,2.54-.4,3.24-1.21.7-.81,1.05-2.24,1.05-4.3s-.35-3.54-1.05-4.38c-.7-.84-1.78-1.26-3.24-1.26h-2.1v11.15h2.1Z"/>
+      <path fill="#685446" d="M605.97,590.88v-22.79h17.09v2.52h-11.05v7.5h9.73v2.45h-9.73v7.79h11.66v2.52h-17.71Z"/>
+      <path fill="#685446" d="M628.94,568.09h8.77c3.21,0,5.73.63,7.54,1.88,1.81,1.25,2.72,3.01,2.72,5.28,0,1.47-.45,2.75-1.36,3.84-.91,1.09-2.09,1.93-3.55,2.54l6.57,9.26h-6.97l-5.35-8.28h-2.32v8.28h-6.05v-22.79ZM637.22,580.29c1.08,0,1.92-.15,2.52-.44.6-.29,1.03-.79,1.29-1.49.26-.7.4-1.67.4-2.91,0-1.82-.33-3.13-.99-3.91-.66-.78-1.77-1.17-3.35-1.17h-2.1v9.92h2.24Z"/>
+      <path fill="#685446" d="M659.18,590.88v-20.27h-7.67v-2.52h21.39v2.52h-7.63v20.27h-6.09Z"/>
+      <path fill="#685446" d="M676.89,590.88v-22.79h6.05v22.79h-6.05Z"/>
+      <path fill="#685446" d="M689.73,590.88v-22.79h17.09v2.52h-11.05v7.5h9.73v2.45h-9.73v7.79h11.66v2.52h-17.71Z"/>
+      <path fill="#685446" d="M714.5,590.65c-1.29-.41-2.24-.85-2.87-1.32s-.94-.75-.94-.84l1.67-2.03s.28.26.85.65c.57.39,1.34.74,2.32,1.07.98.33,2.11.49,3.4.49,1.37,0,2.44-.29,3.2-.88.76-.58,1.14-1.35,1.14-2.31,0-.61-.21-1.14-.61-1.6-.41-.46-.91-.84-1.51-1.16-.6-.31-1.44-.72-2.52-1.21-1.4-.58-2.56-1.15-3.46-1.68-.91-.54-1.68-1.24-2.32-2.1-.64-.86-.96-1.93-.96-3.19,0-1.38.39-2.58,1.18-3.61.79-1.03,1.88-1.82,3.29-2.37,1.4-.55,2.99-.82,4.78-.82,1.17,0,2.27.12,3.31.35,1.04.23,1.91.5,2.63.79.72.29,1.07.45,1.07.47l-.7,2.39c-.15-.07-.5-.23-1.07-.47-.57-.25-1.29-.48-2.17-.72-.88-.23-1.77-.35-2.68-.35-1.11,0-2,.25-2.67.75-.67.5-1.01,1.2-1.01,2.09,0,.98.39,1.77,1.18,2.35s2,1.23,3.64,1.93c1.46.63,2.63,1.2,3.51,1.72.88.51,1.63,1.21,2.26,2.09.63.88.94,1.97.94,3.28,0,1.43-.45,2.65-1.34,3.68-.89,1.03-2.1,1.82-3.62,2.37-1.52.55-3.21.82-5.09.82s-3.54-.2-4.82-.61Z"/>
+    </g>
+    <g>
+      <path fill="#685446" d="M343.78,491.59c-2.42-1.46-5.02-2.7-7.73-3.68-2.17,1.72-4.16,3.64-5.89,5.73,2.16.8,4.29,1.78,6.33,2.91.48.26.94.54,1.42.81.07.04.14.09.2.13,2.48,1.51,4.73,3.2,6.73,5.04.07.06.13.1.17.17,2.06,1.9,3.87,3.99,5.41,6.19.06.06.09.13.14.19,1.1,1.59,2.06,3.26,2.88,4.96.83-1.7,1.78-3.36,2.88-4.96.06-.06.09-.13.14-.19,1.54-2.2,3.35-4.29,5.41-6.19.04-.07.1-.12.17-.17,2-1.84,4.25-3.54,6.73-5.04.06-.04.13-.09.2-.13.48-.28.94-.55,1.42-.81,2.04-1.13,4.17-2.12,6.33-2.91-1.72-2.09-3.71-4-5.89-5.73-2.71.99-5.31,2.22-7.73,3.68-.07.04-.16.09-.23.13-1.94,1.17-3.8,2.51-5.52,3.96-.41.33-.81.7-1.19,1.04-.06.04-.12.09-.17.14-.91.84-1.75,1.71-2.57,2.61-.81-.9-1.65-1.77-2.57-2.61-.06-.06-.12-.1-.17-.14-.38-.35-.78-.71-1.19-1.04-1.72-1.45-3.58-2.78-5.52-3.96-.07-.04-.16-.09-.23-.13Z"/>
+      <polygon fill="#685446" points="357.48 486.94 353.47 476.33 349.45 486.94 353.47 492.22 357.48 486.94"/>
+      <path fill="#685446" d="M357.09,549.04v-.03s.04.01.06.01c2.74,1.01,5.31,2.25,7.71,3.65h.03c.13.07.26.16.41.25h0c2.51,1.49,4.83,3.19,6.93,5.06.09.09.19.16.26.23,2.1,1.9,3.99,3.96,5.61,6.18.06.07.12.14.16.23,1.62,2.22,2.97,4.57,4.04,7.03.03.07.06.15.1.23,1.03,2.41,1.77,4.93,2.22,7.51.03.07.04.14.04.22.42,2.51.55,5.07.38,7.7-.01.07-.01.13-.01.22-.04.48-.09.97-.14,1.46-.25,2.1-.7,4.13-1.32,6.09,2.96.13,5.93-.01,8.86-.41.78-2.44,1.29-4.97,1.49-7.52,0-.07.01-.14.01-.22.15-2.06.1-4.13-.13-6.2-.06-.49-.13-.97-.2-1.45-.01-.07-.01-.14-.04-.23-.43-2.57-1.16-5.07-2.15-7.45-.04-.07-.07-.14-.1-.22-1.04-2.46-2.38-4.8-3.97-6.99-.04-.07-.1-.13-.14-.2-.51-.7-1.04-1.38-1.61-2.04-1.22-1.45-2.55-2.81-3.99-4.12-.07-.06-.14-.13-.23-.2h0c-2.15-1.88-4.48-3.58-7.03-5.07-.1-.07-.2-.13-.32-.19-2.51-1.46-5.2-2.71-8.03-3.71-.16-.07-.32-.13-.48-.19h0c-2.35-.81-4.77-1.45-7.28-1.93h.04c2.96-.12,5.9.01,8.78.41,0,0,0-.01.01-.01.16.01.33.04.49.07h0c3.02.41,5.96,1.06,8.78,1.94.13.06.25.09.35.13,2.86.91,5.58,2.07,8.15,3.45.1.04.19.1.28.15,2.58,1.39,4.97,3,7.18,4.83.07.06.13.1.19.16,2.15,1.8,4.09,3.77,5.78,5.94.06.04.1.1.15.19,1.65,2.09,3.04,4.36,4.2,6.78.03.06.06.12.1.2.2.45.41.9.61,1.36.81,1.99,1.44,3.99,1.87,5.99,2.73-.99,5.33-2.23,7.76-3.68-.51-2.49-1.32-4.97-2.42-7.33-.03-.07-.06-.14-.1-.22-.9-1.9-1.97-3.75-3.23-5.54-.29-.42-.59-.83-.91-1.23-.04-.06-.09-.12-.13-.17-1.7-2.16-3.59-4.15-5.7-5.91-.07-.06-.13-.12-.2-.16-2.17-1.83-4.55-3.44-7.07-4.81-.09-.04-.16-.07-.23-.12-.81-.45-1.64-.86-2.48-1.25-1.83-.84-3.71-1.58-5.65-2.2-.1-.03-.22-.07-.32-.1-2.87-.9-5.84-1.57-8.89-1.94-.12-.01-.25-.04-.38-.04-3-.38-6.04-.49-9.09-.35-.19,0-.35.01-.54.03h0c-2.51.14-5,.48-7.48.97,2.61-1.22,5.32-2.2,8.1-2.94h.01c.16-.06.32-.1.48-.13,2.91-.75,5.9-1.28,8.9-1.54.13,0,.26-.03.38-.03,3.03-.23,6.06-.22,9.06.06.12.01.23.01.33.03,3.02.29,5.99.84,8.89,1.65.09.03.16.06.25.09,2.83.81,5.58,1.87,8.19,3.17.09.03.15.07.23.12,2.54,1.28,4.93,2.8,7.19,4.54.06.06.13.1.19.16.42.32.83.65,1.23,1,1.74,1.48,3.3,3.04,4.7,4.7,1.97-1.93,3.68-4.02,5.15-6.23-1.71-2.06-3.68-3.99-5.87-5.7-.07-.06-.13-.12-.2-.16-1.75-1.38-3.65-2.64-5.68-3.78-.48-.26-.96-.52-1.44-.77-.07-.03-.15-.07-.23-.12-2.61-1.32-5.31-2.38-8.09-3.19-.09-.03-.17-.04-.26-.06-2.88-.84-5.83-1.39-8.8-1.68-.09-.01-.17-.01-.26-.03-.94-.09-1.9-.16-2.86-.19-2.07-.09-4.13-.03-6.2.13-.1.01-.22.01-.33.03-3.04.26-6.04.8-8.99,1.58h.01c-.13.03-.25.06-.38.1-2.88.8-5.68,1.83-8.36,3.1-.16.07-.3.14-.45.22h-.01c-2.17,1.07-4.28,2.3-6.25,3.7,1.74-2.09,3.7-3.99,5.83-5.7,0,0,0-.01.01-.01.1-.1.23-.19.36-.29,2.23-1.78,4.67-3.36,7.25-4.71.12-.07.22-.13.33-.17,2.59-1.35,5.33-2.48,8.19-3.35.1-.03.2-.06.3-.09,2.86-.87,5.81-1.49,8.84-1.84.09-.01.17-.03.28-.03,2.94-.33,5.94-.41,8.96-.2.09-.01.17,0,.26.01,2.93.2,5.86.67,8.76,1.39.09.01.16.03.25.06.55.14,1.09.29,1.62.45,2.32.68,4.51,1.51,6.58,2.46.8-2.46,1.3-4.99,1.51-7.54-2.58-1.22-5.32-2.2-8.15-2.93-.09-.03-.17-.06-.25-.07-2.29-.58-4.64-1.01-7.03-1.28-.57-.06-1.13-.1-1.7-.14-.07-.01-.15-.01-.25-.03-3-.2-5.99-.15-8.89.16-.1.01-.19.03-.28.04-3.01.33-5.94.93-8.77,1.78-.07.01-.16.04-.25.07-.9.28-1.8.58-2.67.9-1.91.71-3.74,1.52-5.54,2.45-.09.06-.17.1-.28.16-2.61,1.38-5.06,2.97-7.31,4.78h.01c-.1.07-.19.14-.29.23-2.2,1.8-4.2,3.78-5.97,5.93-.1.13-.2.25-.32.38h.01c-1.44,1.78-2.71,3.7-3.8,5.7v-.04c.54-2.52,1.33-4.97,2.41-7.31h0c.06-.15.12-.29.17-.41,1.13-2.45,2.52-4.8,4.17-6.97.06-.1.13-.19.2-.28,1.67-2.19,3.58-4.25,5.71-6.09.07-.07.16-.14.23-.2,2.13-1.86,4.48-3.52,7.03-4.97.07-.04.15-.09.23-.12,2.49-1.41,5.16-2.61,7.97-3.57.09-.03.16-.04.25-.07,2.73-.91,5.61-1.59,8.6-2.03.07-.01.16-.03.25-.03.57-.09,1.12-.15,1.68-.22,2.44-.25,4.81-.32,7.18-.25-.52-2.52-1.33-4.99-2.42-7.36-2.94-.12-5.91.01-8.81.42-.1.01-.19.01-.26.04-2.36.32-4.7.81-6.97,1.48-.54.16-1.07.32-1.59.49-.07.03-.16.06-.25.09-2.81.94-5.46,2.1-7.93,3.48-.09.03-.16.07-.23.13-2.55,1.42-4.88,3.06-7,4.88-.06.06-.12.12-.19.17-.68.58-1.32,1.19-1.94,1.8-1.36,1.36-2.61,2.78-3.75,4.28-.06.09-.13.17-.19.25h.01c-1.67,2.23-3.06,4.58-4.17,7.06-.06.1-.1.2-.14.3-.43.99-.81,2-1.16,3-.35-1-.72-2.01-1.16-3-.04-.1-.09-.2-.14-.3-1.12-2.48-2.51-4.83-4.17-7.04h.01c-.06-.09-.13-.17-.19-.26-1.15-1.49-2.39-2.91-3.75-4.28-.62-.61-1.26-1.22-1.94-1.8-.07-.06-.13-.12-.19-.17-2.12-1.83-4.45-3.46-7-4.88-.07-.06-.14-.1-.23-.13-2.46-1.38-5.12-2.54-7.93-3.48-.09-.03-.17-.06-.25-.09-.52-.17-1.06-.33-1.59-.49-2.28-.67-4.61-1.16-6.97-1.48-.07-.03-.16-.03-.26-.04-2.9-.41-5.87-.54-8.81-.42-1.09,2.38-1.9,4.84-2.42,7.36,2.36-.07,4.74,0,7.18.25.57.07,1.12.13,1.68.22.09,0,.17.01.25.03,2.99.43,5.87,1.12,8.6,2.03.09.03.16.04.25.07,2.81.96,5.48,2.16,7.97,3.57.09.03.16.07.23.12,2.55,1.45,4.9,3.12,7.03,4.97.07.06.16.13.23.2,2.13,1.84,4.04,3.9,5.71,6.09.07.09.15.17.2.28,1.65,2.17,3.04,4.52,4.17,6.97.06.12.12.26.17.39h0c1.07,2.35,1.87,4.8,2.41,7.32v.04c-1.09-2-2.36-3.91-3.8-5.7h.01c-.12-.13-.22-.25-.32-.38-1.77-2.15-3.77-4.13-5.97-5.93-.1-.09-.19-.16-.29-.22h.01c-2.25-1.83-4.7-3.42-7.31-4.8-.1-.06-.19-.1-.28-.16-1.8-.93-3.62-1.74-5.54-2.45-.87-.32-1.77-.62-2.67-.9-.09-.03-.17-.06-.25-.07-2.83-.86-5.75-1.45-8.77-1.78-.09-.01-.17-.03-.28-.04-2.9-.3-5.89-.36-8.89-.16-.1.01-.17.01-.25.03-.57.04-1.13.09-1.7.14-2.39.26-4.74.7-7.03,1.28-.07.01-.16.04-.25.07-2.83.72-5.57,1.71-8.15,2.93.2,2.55.71,5.07,1.51,7.54,2.07-.96,4.26-1.78,6.58-2.46.54-.16,1.07-.3,1.62-.45.09-.03.16-.04.25-.06,2.9-.72,5.83-1.19,8.76-1.39.09-.01.17-.03.26-.01,3.02-.2,6.02-.13,8.96.2.1,0,.19.01.28.03,3.03.35,5.99.97,8.84,1.84.1.03.2.06.3.09,2.86.87,5.6,2,8.19,3.35.12.04.22.1.33.17,2.58,1.35,5.02,2.93,7.25,4.71.13.1.26.19.36.29.01,0,.01.01.01.01,2.13,1.71,4.09,3.61,5.83,5.7-1.97-1.39-4.07-2.62-6.25-3.68h-.01c-.15-.09-.29-.16-.45-.23-2.68-1.28-5.48-2.3-8.36-3.1-.13-.04-.25-.07-.38-.09h.01c-2.94-.8-5.94-1.33-8.99-1.59-.12-.01-.23-.01-.33-.03-2.07-.16-4.13-.22-6.2-.13-.96.03-1.91.1-2.86.19-.09.01-.17.01-.26.03-2.97.29-5.91.84-8.8,1.68-.09.01-.17.03-.26.06-2.78.81-5.48,1.87-8.09,3.19-.09.04-.16.09-.23.12-.48.25-.96.51-1.44.77-2.03,1.15-3.93,2.41-5.68,3.78-.07.04-.13.1-.2.16-2.19,1.71-4.16,3.64-5.87,5.7,1.46,2.22,3.17,4.31,5.15,6.23,1.39-1.65,2.96-3.22,4.7-4.7.41-.35.81-.68,1.23-1,.06-.06.13-.1.19-.16,2.26-1.74,4.65-3.26,7.19-4.54.09-.04.15-.09.23-.12,2.61-1.3,5.36-2.36,8.19-3.17.09-.03.16-.06.25-.09,2.9-.81,5.87-1.36,8.89-1.65.1-.01.22-.01.33-.03,3-.28,6.03-.29,9.06-.06.12,0,.25.03.38.03,3,.26,5.99.78,8.9,1.54.16.03.32.07.48.13h.01c2.78.74,5.49,1.72,8.1,2.94-2.48-.49-4.97-.83-7.48-.96h0c-.19-.03-.35-.04-.54-.04-3.04-.14-6.09-.03-9.09.35-.13,0-.26.03-.38.04-3.04.38-6.02,1.04-8.89,1.94-.1.03-.22.07-.32.1-1.94.62-3.83,1.36-5.65,2.2-.84.39-1.67.8-2.48,1.25-.07.04-.14.07-.23.12-2.52,1.38-4.9,2.99-7.07,4.81-.07.04-.13.1-.2.16-2.1,1.77-4,3.75-5.7,5.91-.04.06-.09.12-.13.17-.32.41-.62.81-.91,1.23-1.26,1.78-2.33,3.64-3.23,5.54-.04.07-.07.14-.1.22-1.1,2.36-1.91,4.84-2.42,7.33,2.42,1.45,5.03,2.7,7.76,3.68.43-2,1.06-4,1.87-5.99.2-.46.41-.91.61-1.36.04-.09.07-.14.1-.2,1.16-2.42,2.55-4.7,4.2-6.78.04-.09.09-.14.15-.19,1.7-2.17,3.64-4.15,5.78-5.94.06-.06.12-.1.19-.16,2.2-1.83,4.6-3.44,7.18-4.83.09-.04.17-.1.28-.15,2.57-1.38,5.29-2.54,8.15-3.45.1-.04.22-.07.35-.13,2.83-.88,5.77-1.54,8.78-1.96h0c.16-.01.33-.04.49-.06.01,0,.01.01.01.01,2.88-.39,5.83-.52,8.78-.41h.04c-2.51.48-4.93,1.12-7.28,1.94h0c-.16.04-.32.1-.48.17-2.83,1-5.52,2.25-8.03,3.71-.12.06-.22.12-.32.19-2.55,1.49-4.89,3.19-7.03,5.09h0c-.09.06-.16.13-.23.19-1.44,1.3-2.77,2.67-3.99,4.12-.57.67-1.1,1.35-1.61,2.04-.04.07-.1.13-.14.2-1.59,2.19-2.93,4.52-3.97,6.99-.03.07-.06.14-.1.22-.99,2.38-1.71,4.88-2.15,7.45-.03.09-.03.16-.04.23-.07.48-.14.96-.2,1.45-.23,2.07-.28,4.15-.13,6.2,0,.07.01.14.01.22.2,2.55.71,5.09,1.49,7.52,2.93.39,5.9.54,8.86.41-.62-1.96-1.07-3.99-1.32-6.09-.06-.49-.1-.99-.14-1.46,0-.09,0-.14-.01-.22-.17-2.62-.04-5.19.38-7.7,0-.07.01-.15.04-.22.45-2.58,1.19-5.1,2.22-7.51.04-.09.07-.16.1-.23,1.07-2.46,2.42-4.81,4.04-7.03.04-.09.1-.16.16-.23,1.62-2.22,3.51-4.28,5.61-6.18.07-.07.17-.15.26-.23,2.1-1.87,4.42-3.57,6.93-5.07h0c.14-.07.28-.16.41-.23h.03c2.41-1.41,4.97-2.64,7.71-3.65.01,0,.03,0,.04-.01v.03s-3.99,10.58-3.99,10.58l4.64,6.12c-.07,3.73-.16,7.48-.28,11.26-.45,15.09-1.29,38.24-2.44,52.29h11.39c-1.15-14.05-1.99-37.2-2.44-52.29-.12-3.78-.2-7.54-.28-11.26l4.64-6.12-4-10.58Z"/>
+      <path fill="#685446" d="M353.47,450.71c-55.4,0-100.47,40.12-100.47,89.45,0,45.81,38.85,83.67,88.74,88.86l.64-6.84c-46.63-4.81-82.94-39.76-82.94-82.02,0-45.53,42.2-82.58,94.03-82.58s94.03,37.05,94.03,82.58c0,42.25-36.31,77.2-82.94,82.02l.64,6.84c49.89-5.19,88.74-43.05,88.74-88.86,0-49.33-45.07-89.45-100.47-89.45Z"/>
+    </g>
+  </g>
+</svg></div>
+    <div class="brand-sub">Калькулятор рассрочки</div>
+    <p class="tag">Рассчитайте сумму рассрочки, наценку, скидки и ежемесячный платёж по квартире.</p>
+  </header>
+
+  <section class="card">
+    <div class="section-title"><span class="bar"></span>Объект</div>
+    <div class="grid">
+      <div class="field">
+        <label>Название ЖК <span class="opt">(необязательно)</span></label>
+        <input type="text" id="complexName" placeholder="ЖК «Пример»">
+      </div>
+      <div class="field">
+        <label>Площадь квартиры</label>
+        <div class="input-shell"><input type="number" id="area" class="has-unit" placeholder="0" step="any"><span class="unit">м²</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field full">
+      <label>Прайс по этажам</label>
+      <p class="hint-note" style="margin:2px 0 10px">Заполните этажи и цену за м². Нужен ещё один диапазон этажей — нажмите «+ Добавить строку». Расчёт пройдёт по всем заполненным строкам.</p>
+      <div class="price-table">
+        <div class="pt-caption" id="ptCaption">Прайс ЖК</div>
+        <div class="pt-head">
+          <div class="span2">Этажи</div>
+          <div>Цены, ₽/м²</div>
+          <div></div>
+        </div>
+        <div id="ptRows">
+        <div class="pt-row" id="ptFirstRow">
+          <input type="number" class="pt-from" placeholder="от" step="1" min="0">
+          <input type="number" class="pt-to" placeholder="до" step="1" min="0">
+          <input type="number" class="pt-price" placeholder="0" step="any" min="0">
+          <button type="button" class="pt-del" title="Удалить строку" aria-label="Удалить строку" disabled>×</button>
+        </div>
+        </div>
+      </div>
+      <button type="button" class="pt-add" id="ptAdd"><span class="plus">+</span>Добавить строку</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field full">
+      <label>Срок рассрочки</label>
+      <div class="pills" id="termPills">
+        <div class="pill term-btn" data-months="12">1 год</div>
+        <div class="pill term-btn" data-months="24">2 года</div>
+        <div class="pill term-btn" data-months="36">3 года</div>
+        <div class="pill term-btn" data-months="48">4 года</div>
+        <div class="pill term-btn" data-months="60">5 лет</div>
+        <div class="pill term-btn" data-months="72">6 лет</div>
+      </div>
+      <div class="input-shell" style="margin-top:10px">
+        <input type="number" id="term" class="has-unit" placeholder="или введите срок вручную" step="1" min="1">
+        <span class="unit">мес.</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field full">
+      <label>Наценка за рассрочку</label>
+      <div class="input-shell"><input type="number" id="markup" class="has-unit" placeholder="0" step="any"><span class="unit">%</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><span class="bar"></span>Первый взнос</div>
+    <p class="hint-note" style="margin-bottom:14px">Выберите только один вариант первого взноса.</p>
+    <div class="grid">
+      <div class="field">
+        <label>Первый взнос в процентах</label>
+        <div class="input-shell"><input type="number" id="downPaymentPercent" class="has-unit" placeholder="0" step="any"><span class="unit">%</span></div>
+      </div>
+      <div class="field">
+        <label>Первый взнос в рублях</label>
+        <div class="input-shell"><input type="number" id="fixedDownPayment" class="has-unit" placeholder="0" step="any"><span class="unit">₽</span></div>
+      </div>
+      <div class="field">
+        <label>Обязательный платёж за м²</label>
+        <div class="input-shell"><input type="number" id="minPayment" class="has-unit" placeholder="0" step="any"><span class="unit">₽/м²</span></div>
+      </div>
+      <div class="field">
+        <label>Материнский капитал</label>
+        <div class="input-shell"><input type="number" id="maternalCapital" class="has-unit" placeholder="0" step="any"><span class="unit">₽</span></div>
+      </div>
+    </div>
+    <p class="hint-note" style="margin-top:12px">Актуальные суммы материнского капитала:</p>
+    <div class="chips" style="margin-top:8px">
+      <span class="chip hint-link" data-amount="737200">На одного ребёнка — 737 200 ₽</span>
+      <span class="chip hint-link" data-amount="974100">На двух детей — 974 100 ₽</span>
+    </div>
+    <p class="hint-note" style="margin-top:12px">Наценка применяется к материнскому капиталу. Для остальных элементов первого взноса уточняйте условия у застройщика.</p>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><span class="bar"></span>🎖 Скидка СВО</div>
+    <p class="hint-note" style="margin-bottom:14px">Применяется после наценки. Как правило, не суммируется с материнским капиталом.</p>
+    <div class="svo-grid">
+      <div class="svo-btn" data-discount="5" data-label="Участник СВО"><span class="t">Участник СВО</span><span class="d">−5%</span></div>
+      <div class="svo-btn" data-discount="10" data-label="Ранен при СВО"><span class="t">Ранен при СВО</span><span class="d">−10%</span></div>
+      <div class="svo-btn" data-discount="10" data-label="Семья погибшего"><span class="t">Семья погибшего</span><span class="d">−10%</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="calc-row">
+      <button class="btn btn-outline" id="calcNoMarkup">Без наценки на денежный взнос</button>
+      <button class="btn btn-primary" id="calcMarkupAll">С наценкой на весь первый взнос</button>
+    </div>
+    <div class="error" id="errorBox"></div>
+  </section>
+
+  <section class="card hidden" id="output">
+    <div class="section-title"><span class="bar"></span>Результаты расчёта</div>
+    <div class="obj-summary" id="objSummary"></div>
+    <div class="result-hero">
+      <div class="lbl">Ежемесячный платёж</div>
+      <div class="big" id="monthlyResult">—</div>
+      <div class="sub" id="monthlySub"></div>
+      <div class="sum">Сумма рассрочки: <b id="installmentHero">—</b></div>
+    </div>
+    <div class="actions">
+      <button class="btn-copy" onclick="copyResults()">📋 Скопировать расчёт</button>
+      <span class="copy-note" id="copyNotification">Результаты скопированы</span>
+      <button class="toggle" onclick="toggleDetails()">Показать детали расчёта <span id="toggleIcon">▼</span></button>
+    </div>
+    <div id="variants"></div>
+    <div class="rows" style="margin-top:16px">
+      <div class="row"><span class="k">Режим расчёта</span><span class="v" id="calculationMode">—</span></div>
+    </div>
+    <div class="copy-final">
+      <button type="button" class="btn-copy-big" id="copyFinal" onclick="copyResults()">📋 Скопировать расчёт</button>
+      <button type="button" class="btn-share" id="shareBtn" onclick="shareResults()">Отправить клиенту…</button>
+      <button type="button" class="preview-toggle" onclick="togglePreview()">Посмотреть текст для клиента <span id="previewIcon">▼</span></button>
+      <div class="copy-preview" id="copyPreview"></div>
+    </div>
+    <textarea id="copyBlock" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"></textarea>
+  </section>
+
+  <footer>
+    <span class="fb">PALMA PROPERTIES</span> · Калькулятор рассрочки<br>
+    © Palma Properties. Все права защищены. Расчёт предварительный — итоговые условия уточняйте у застройщика.
+  </footer>
+</div>
+
+<script>
+  let activeSvoDiscount = 0;
+  let activeSvoLabel = '';
+
+  function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function formatCurrency(value){ return formatNumber(Math.round(value)) + ' ₽'; }
+
+  function showError(msg){ const b=document.getElementById('errorBox'); b.textContent=msg; b.style.display='block'; }
+  function clearError(){ document.getElementById('errorBox').style.display='none'; }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* Площадь: «24.5» → «24,5» */
+  function fmtArea(a){ return String(a).trim().replace('.', ','); }
+
+  /* Доля от стоимости квартиры, например «30%» или «21,4%» */
+  function pctOf(part, whole){
+    if(!whole) return '';
+    const p = part / whole * 100;
+    const s = (Math.round(p * 10) / 10).toString().replace('.', ',');
+    return s + '%';
+  }
+
+  /* Собираем заполненные строки прайса: диапазон этажей + цена за м² */
+  function getPriceRows(){
+    const rows = [];
+    document.querySelectorAll('.pt-row').forEach((r, i) => {
+      const from = r.querySelector('.pt-from').value.trim();
+      const to = r.querySelector('.pt-to').value.trim();
+      const price = parseFloat(r.querySelector('.pt-price').value) || 0;
+      if(price > 0){
+        let label, cap = 'Этажи', num;
+        if(from && to){ num = `${from}–${to}`; label = `${from}–${to} этаж`; }
+        else if(from){ num = `от ${from}`; label = `от ${from} этажа`; }
+        else if(to){ num = `до ${to}`; label = `до ${to} этажа`; }
+        else { cap = 'Вариант'; num = String(i + 1); label = `Вариант ${i + 1}`; }
+        rows.push({ from, to, price, label, cap, num });
+      }
+    });
+    return rows;
+  }
+
+  /* Расчёт по одной цене за м² */
+  function computeVariant(pricePerSq, c){
+    const totalPrice = c.area * pricePerSq;
+
+    let cashPayment = 0;
+    if(c.fixed > 0) cashPayment = Math.min(c.fixed, totalPrice);
+    else if(c.percent > 0) cashPayment = totalPrice * (c.percent / 100);
+    else if(c.minPayment > 0) cashPayment = c.minPayment * c.area;
+
+    const priceTag = formatNumber(Math.round(pricePerSq)) + ' ₽/м²';
+    if(cashPayment > totalPrice - c.maternalCapital){
+      throw new Error(`Денежный взнос превышает допустимое значение с учётом мат. капитала (цена ${priceTag})`);
+    }
+
+    const remainingBase = totalPrice - cashPayment - c.maternalCapital;
+    if(remainingBase < 0){ throw new Error(`Общая сумма взносов превышает стоимость квартиры (цена ${priceTag})`); }
+
+    const markupPercent = c.markup / 100;
+    let markupValue = remainingBase * markupPercent + c.maternalCapital * markupPercent;
+    if(c.mode === 'markup_on_all'){ markupValue += cashPayment * markupPercent; }
+
+    const installmentAfterMarkup = remainingBase + markupValue;
+    const svoDiscountValue = activeSvoDiscount > 0 ? installmentAfterMarkup * (activeSvoDiscount / 100) : 0;
+    const installmentFinal = installmentAfterMarkup - svoDiscountValue;
+
+    return {
+      pricePerSq, totalPrice, cashPayment, maternalCapital: c.maternalCapital,
+      markupValue, remainingBase, finalPrice: totalPrice + markupValue,
+      svoDiscountValue, installmentFinal, monthlyPayment: installmentFinal / c.term
+    };
+  }
+
+  function calculate(mode){
+    try{
+      clearError();
+      const c = {
+        mode,
+        area: parseFloat(document.getElementById('area').value) || 0,
+        term: parseFloat(document.getElementById('term').value) || 0,
+        markup: parseFloat(document.getElementById('markup').value) || 0,
+        maternalCapital: parseFloat(document.getElementById('maternalCapital').value) || 0,
+        fixed: parseFloat(document.getElementById('fixedDownPayment').value) || 0,
+        percent: parseFloat(document.getElementById('downPaymentPercent').value) || 0,
+        minPayment: parseFloat(document.getElementById('minPayment').value) || 0
+      };
+
+      if(!c.area || c.area <= 0) throw new Error('Введите корректную площадь');
+
+      const priceRows = getPriceRows();
+      if(priceRows.length === 0) throw new Error('Заполните хотя бы одну строку прайса — цену за м²');
+      if(!c.term || c.term <= 0) throw new Error('Выберите или введите срок рассрочки');
+
+      const inputs = [c.fixed, c.percent, c.minPayment].filter(v => v > 0);
+      if(inputs.length > 1){ throw new Error('Используйте только один способ указания первого взноса!'); }
+
+      const variants = priceRows.map(row => Object.assign(
+        { label: row.label, cap: row.cap, num: row.num }, computeVariant(row.price, c)));
+      updateUI(mode, variants);
+    }catch(error){ showError(error.message); console.error(error); }
+  }
+
+  function updateUI(mode, variants){
+    const complexName = document.getElementById('complexName').value.trim();
+    const area = document.getElementById('area').value;
+    const term = document.getElementById('term').value;
+    const maternalCapital = variants[0].maternalCapital;
+    const modeText = mode === 'no_markup' ? 'Без наценки на денежный взнос' : 'С наценкой на весь первый взнос';
+
+    let mcType = '';
+    if(maternalCapital > 0){
+      if(Math.abs(maternalCapital - 737200) < 100) mcType = 'на одного ребёнка';
+      else if(Math.abs(maternalCapital - 974100) < 100) mcType = 'на двух детей';
+    }
+
+    /* Шапка — диапазон по всем вариантам */
+    const range = arr => {
+      const min = Math.min.apply(null, arr), max = Math.max.apply(null, arr);
+      return Math.round(min) === Math.round(max)
+        ? formatCurrency(min)
+        : `${formatCurrency(min)} — ${formatCurrency(max)}`;
+    };
+    document.getElementById('monthlyResult').textContent = range(variants.map(v => v.monthlyPayment));
+    document.getElementById('monthlySub').textContent = term ? `× ${term} мес.` : '';
+    document.getElementById('installmentHero').textContent = range(variants.map(v => v.installmentFinal));
+    document.getElementById('calculationMode').textContent = modeText;
+
+    /* Сводка: ЖК, площадь, срок */
+    const chips = [];
+    if(complexName) chips.push(`<div class="chip name"><span class="k">Жилой комплекс</span><span class="v">${esc(complexName)}</span></div>`);
+    chips.push(`<div class="chip"><span class="k">Площадь</span><span class="v">${esc(fmtArea(area))} м²</span></div>`);
+    if(term) chips.push(`<div class="chip"><span class="k">Срок</span><span class="v">${esc(term)} мес.</span></div>`);
+    if(maternalCapital > 0) chips.push(`<div class="chip"><span class="k">Мат. капитал</span><span class="v">${formatCurrency(maternalCapital)}</span></div>`);
+    if(activeSvoDiscount > 0) chips.push(`<div class="chip"><span class="k">Скидка СВО</span><span class="v">${activeSvoDiscount}%</span></div>`);
+    document.getElementById('objSummary').innerHTML = chips.join('');
+
+    /* Карточки по каждому варианту прайса */
+    const svoRow = v => v.svoDiscountValue > 0
+      ? `−${formatCurrency(v.svoDiscountValue)} (${esc(activeSvoLabel)}, ${activeSvoDiscount}%)` : '—';
+
+    document.getElementById('variants').innerHTML = variants.map(v => `
+      <div class="variant">
+        <div class="v-head">
+          <span class="v-floors"><span class="cap">${esc(v.cap)}</span><span class="num">${esc(v.num)}</span></span>
+          <span class="p">${formatNumber(Math.round(v.pricePerSq))} ₽/м²</span>
+        </div>
+        <div class="v-main">
+          <div class="lbl">Ежемесячный платёж</div>
+          <div class="big">${formatCurrency(v.monthlyPayment)}</div>
+          <div class="sub">${term ? '× ' + term + ' мес.' : ''}</div>
+          <div class="v-area">${complexName ? esc(complexName) + ' · ' : ''}${esc(fmtArea(area))} м² × ${formatNumber(Math.round(v.pricePerSq))} ₽/м²</div>
+        </div>
+        <div class="rows">
+          <div class="row"><span class="k">Общая стоимость</span><span class="v">${formatCurrency(v.totalPrice)}</span></div>
+          <div class="row"><span class="k">Первый взнос клиента</span><span class="v">${formatCurrency(v.cashPayment)}${
+            v.cashPayment > 0 ? `<span class="pct">${pctOf(v.cashPayment, v.totalPrice)}</span>` : ''}</span></div>
+          ${v.maternalCapital > 0 ? `<div class="row"><span class="k">Материнский капитал</span><span class="v">${formatCurrency(v.maternalCapital)}<span class="pct">${pctOf(v.maternalCapital, v.totalPrice)}</span></span></div>` : ''}
+          <div class="row total"><span class="k">Сумма рассрочки</span><span class="v">${formatCurrency(v.installmentFinal)}</span></div>
+          <div class="v-details">
+            <div class="row"><span class="k">Наценка за рассрочку</span><span class="v">${formatCurrency(v.markupValue)}</span></div>
+            ${v.svoDiscountValue > 0 ? `<div class="row"><span class="k">Скидка СВО</span><span class="v">${svoRow(v)}</span></div>` : ''}
+          </div>
+        </div>
+      </div>`).join('');
+
+    /* Текст для клиента — удобно отправить в мессенджер */
+    const L = [];
+    L.push('Palma Properties · Расчёт рассрочки');
+    L.push('');
+    if(complexName) L.push(`🏢 ${complexName}`);
+    L.push(`📐 Площадь: ${fmtArea(area)} м²`);
+    if(term) L.push(`🗓 Срок рассрочки: ${term} мес.`);
+    if(maternalCapital > 0) L.push(`👶 Материнский капитал: ${formatCurrency(maternalCapital)}${mcType ? ' (' + mcType + ')' : ''}`);
+    if(activeSvoDiscount > 0) L.push(`🎖 Скидка СВО: ${activeSvoDiscount}% (${activeSvoLabel})`);
+    const multi = variants.length > 1;
+    variants.forEach(v => {
+      L.push('');
+      const floorsKnown = v.cap !== 'Вариант';
+      if(multi || floorsKnown) L.push(`▪️ ${v.label} · ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
+      else L.push(`▪️ Цена: ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
+      L.push(`Стоимость квартиры: ${formatCurrency(v.totalPrice)}`);
+      if(v.cashPayment > 0) L.push(`Первый взнос: ${formatCurrency(v.cashPayment)} (${pctOf(v.cashPayment, v.totalPrice)})`);
+      if(v.svoDiscountValue > 0) L.push(`Скидка СВО: −${formatCurrency(v.svoDiscountValue)}`);
+      L.push(`Сумма рассрочки: ${formatCurrency(v.installmentFinal)}`);
+      L.push(`✅ Ежемесячный платёж: ${formatCurrency(v.monthlyPayment)}${term ? ' × ' + term + ' мес.' : ''}`);
+    });
+    L.push('');
+    L.push('Расчёт предварительный, точные условия уточняйте у менеджера.');
+    const copyText = L.join('\n');
+    document.getElementById('copyBlock').value = copyText;
+    document.getElementById('copyPreview').textContent = copyText;
+    const fin = document.getElementById('copyFinal');
+    fin.classList.remove('done'); fin.textContent = '📋 Скопировать расчёт';
+
+    document.getElementById('output').classList.remove('hidden');
+    try{ document.getElementById('output').scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(e){}
+  }
+
+  function fallbackCopy(text){
+    const ta = document.getElementById('copyBlock');
+    ta.value = text;
+    ta.removeAttribute('readonly');
+    ta.focus(); ta.select();
+    try{ ta.setSelectionRange(0, text.length); }catch(e){}
+    let ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e){}
+    ta.blur();
+    return ok;
+  }
+  function onCopied(){
+    showCopyNotification('Расчёт скопирован');
+    const fin = document.getElementById('copyFinal');
+    fin.classList.add('done'); fin.textContent = '✓ Скопировано, вставьте в чат клиенту';
+    clearTimeout(window.__copyT);
+    window.__copyT = setTimeout(() => { fin.classList.remove('done'); fin.textContent = '📋 Скопировать расчёт'; }, 2500);
+  }
+  function copyResults(){
+    const text = document.getElementById('copyBlock').value;
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(onCopied).catch(() => {
+        if(fallbackCopy(text)) onCopied(); else { document.getElementById('copyPreview').classList.add('on'); }
+      });
+    } else if(fallbackCopy(text)) onCopied();
+    else document.getElementById('copyPreview').classList.add('on');
+  }
+  function shareResults(){
+    const text = document.getElementById('copyBlock').value;
+    if(navigator.share) navigator.share({ text }).catch(() => {});
+  }
+  function togglePreview(){
+    const on = document.getElementById('copyPreview').classList.toggle('on');
+    document.getElementById('previewIcon').textContent = on ? '▲' : '▼';
+  }
+  function toggleDetails(){
+    const out = document.getElementById('output');
+    const on = out.classList.toggle('details-on');
+    document.getElementById('toggleIcon').textContent = on ? '▲' : '▼';
+  }
+  function showCopyNotification(text){
+    const n = document.getElementById('copyNotification');
+    n.textContent = text; n.style.display='inline';
+    setTimeout(() => n.style.display='none', 2000);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.term-btn').forEach(button => {
+      button.addEventListener('click', function(){
+        const months = this.getAttribute('data-months');
+        document.getElementById('term').value = months;
+        document.querySelectorAll('.term-btn').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    document.getElementById('term').addEventListener('input', function(){
+      const v = this.value.trim();
+      document.querySelectorAll('.term-btn').forEach(btn => {
+        btn.classList.toggle('active', v !== '' && btn.getAttribute('data-months') === v);
+      });
+    });
+
+    document.getElementById('calcNoMarkup').addEventListener('click', function(){ calculate('no_markup'); });
+    document.getElementById('calcMarkupAll').addEventListener('click', function(){ calculate('markup_on_all'); });
+
+    document.querySelectorAll('.hint-link').forEach(link => {
+      link.addEventListener('click', function(e){ e.preventDefault(); document.getElementById('maternalCapital').value = this.getAttribute('data-amount'); });
+    });
+
+    document.querySelectorAll('.svo-btn').forEach(button => {
+      button.addEventListener('click', function(){
+        const discount = parseFloat(this.getAttribute('data-discount'));
+        const label = this.getAttribute('data-label');
+        if(this.classList.contains('active')){
+          this.classList.remove('active'); activeSvoDiscount = 0; activeSvoLabel = '';
+        } else {
+          document.querySelectorAll('.svo-btn').forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active'); activeSvoDiscount = discount; activeSvoLabel = label;
+        }
+      });
+    });
+
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+      input.addEventListener('wheel', function(e){ e.preventDefault(); });
+    });
+
+    document.getElementById('complexName').addEventListener('input', function(){
+      const n = this.value.trim();
+      document.getElementById('ptCaption').textContent = n ? `Прайс ${n}` : 'Прайс ЖК';
+    });
+
+    /* Прайс: добавление и удаление строк */
+    const ptRows = document.getElementById('ptRows');
+    const firstRow = document.getElementById('ptFirstRow');
+    function refreshDel(){
+      const rows = ptRows.querySelectorAll('.pt-row');
+      rows.forEach(r => { r.querySelector('.pt-del').disabled = rows.length === 1; });
+    }
+    document.getElementById('ptAdd').addEventListener('click', function(){
+      const r = firstRow.cloneNode(true);
+      r.removeAttribute('id');
+      r.querySelectorAll('input').forEach(i => { i.value = ''; i.addEventListener('wheel', e => e.preventDefault()); });
+      ptRows.appendChild(r);
+      refreshDel();
+      r.querySelector('.pt-from').focus();
+    });
+    ptRows.addEventListener('click', function(e){
+      const b = e.target.closest('.pt-del');
+      if(!b || b.disabled) return;
+      b.closest('.pt-row').remove();
+      refreshDel();
+    });
+    refreshDel();
+
+    if(navigator.share && /iPhone|iPad|Android/i.test(navigator.userAgent)) document.getElementById('shareBtn').style.display = 'block';
+
+    document.getElementById('complexName').focus();
+  });
+</script>
+</body>
+</html>
