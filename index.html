@@ -177,6 +177,25 @@
   .pt-add .plus{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
     background:var(--dark);color:#F3EAD9;font-size:16px;font-weight:800;line-height:1}
 
+  /* Площади квартир: строки с плюсиком */
+  .area-rows{display:flex;flex-direction:column;gap:8px}
+  .area-row{display:flex;gap:8px;align-items:stretch}
+  .area-row .input-shell{flex:1 1 auto}
+  .area-del{flex:0 0 46px;border:1.5px solid var(--line-strong);background:#FDFBF7;color:#A08E78;
+    font-size:20px;line-height:1;border-radius:11px;cursor:pointer;font-family:inherit;padding:0}
+  .area-del:hover{color:#B91C1C;background:#FEF2F2;border-color:#FCA5A5}
+  .area-del[disabled]{display:none}
+  .pt-add.area-add{margin-top:2px}
+
+  /* Группы результатов по площади */
+  .area-group{margin-top:24px}
+  .area-group:first-child{margin-top:6px}
+  .area-group-title{display:flex;align-items:baseline;gap:10px;color:var(--dark-deep)}
+  .area-group-title .cap{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#A08E78}
+  .area-group-title .num{font-size:19px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .area-group-title:after{content:"";flex:1;height:1px;background:var(--line-strong);align-self:center}
+  .area-group-title + .variant{margin-top:10px}
+
   /* Сводка по объекту в результатах */
   .obj-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .obj-summary .chip{display:inline-flex;flex-direction:column;gap:2px;background:#FBF5EA;
@@ -275,7 +294,13 @@
       </div>
       <div class="field">
         <label>Площадь квартиры</label>
-        <div class="input-shell"><input type="number" id="area" class="has-unit" placeholder="0" step="any"><span class="unit">м²</span></div>
+        <div class="area-rows" id="areaRows">
+          <div class="area-row" id="areaFirstRow">
+            <div class="input-shell"><input type="number" class="area-input has-unit" placeholder="0" step="any" min="0"><span class="unit">м²</span></div>
+            <button type="button" class="area-del" title="Удалить площадь" aria-label="Удалить площадь" disabled>×</button>
+          </div>
+        </div>
+        <button type="button" class="pt-add area-add" id="areaAdd"><span class="plus">+</span>Добавить площадь</button>
       </div>
     </div>
 
@@ -451,22 +476,37 @@
     return rows;
   }
 
-  /* Расчёт по одной цене за м² */
-  function computeVariant(pricePerSq, c){
-    const totalPrice = c.area * pricePerSq;
+  /* Собираем заполненные площади квартир */
+  function getAreas(){
+    const list = [];
+    let bad = false;
+    document.querySelectorAll('.area-input').forEach(inp => {
+      const raw = inp.value.trim();
+      if(raw === '') return;
+      const val = parseFloat(raw);
+      if(!(val > 0)){ bad = true; return; }
+      list.push({ value: val, raw });
+    });
+    return { list, bad };
+  }
+
+  /* Расчёт по одной площади и одной цене за м² */
+  function computeVariant(pricePerSq, area, c){
+    const totalPrice = area * pricePerSq;
 
     let cashPayment = 0;
     if(c.fixed > 0) cashPayment = Math.min(c.fixed, totalPrice);
     else if(c.percent > 0) cashPayment = totalPrice * (c.percent / 100);
-    else if(c.minPayment > 0) cashPayment = c.minPayment * c.area;
+    else if(c.minPayment > 0) cashPayment = c.minPayment * area;
 
-    const priceTag = formatNumber(Math.round(pricePerSq)) + ' ₽/м²';
+    const priceTag = (c.multiArea ? `площадь ${fmtArea(area)} м², ` : '') +
+      'цена ' + formatNumber(Math.round(pricePerSq)) + ' ₽/м²';
     if(cashPayment > totalPrice - c.maternalCapital){
-      throw new Error(`Денежный взнос превышает допустимое значение с учётом мат. капитала (цена ${priceTag})`);
+      throw new Error(`Денежный взнос превышает допустимое значение с учётом мат. капитала (${priceTag})`);
     }
 
     const remainingBase = totalPrice - cashPayment - c.maternalCapital;
-    if(remainingBase < 0){ throw new Error(`Общая сумма взносов превышает стоимость квартиры (цена ${priceTag})`); }
+    if(remainingBase < 0){ throw new Error(`Общая сумма взносов превышает стоимость квартиры (${priceTag})`); }
 
     const markupPercent = c.markup / 100;
     let markupValue = remainingBase * markupPercent + c.maternalCapital * markupPercent;
@@ -477,7 +517,7 @@
     const installmentFinal = installmentAfterMarkup - svoDiscountValue;
 
     return {
-      pricePerSq, totalPrice, cashPayment, maternalCapital: c.maternalCapital,
+      area, pricePerSq, totalPrice, cashPayment, maternalCapital: c.maternalCapital,
       markupValue, remainingBase, finalPrice: totalPrice + markupValue,
       svoDiscountValue, installmentFinal, monthlyPayment: installmentFinal / c.term
     };
@@ -486,9 +526,10 @@
   function calculate(mode){
     try{
       clearError();
+      const areas = getAreas();
       const c = {
         mode,
-        area: parseFloat(document.getElementById('area').value) || 0,
+        multiArea: areas.list.length > 1,
         term: parseFloat(document.getElementById('term').value) || 0,
         markup: parseFloat(document.getElementById('markup').value) || 0,
         maternalCapital: parseFloat(document.getElementById('maternalCapital').value) || 0,
@@ -497,7 +538,8 @@
         minPayment: parseFloat(document.getElementById('minPayment').value) || 0
       };
 
-      if(!c.area || c.area <= 0) throw new Error('Введите корректную площадь');
+      if(areas.bad) throw new Error('Проверьте площади: каждая должна быть больше нуля');
+      if(areas.list.length === 0) throw new Error('Введите корректную площадь');
 
       const priceRows = getPriceRows();
       if(priceRows.length === 0) throw new Error('Заполните хотя бы одну строку прайса — цену за м²');
@@ -506,18 +548,22 @@
       const inputs = [c.fixed, c.percent, c.minPayment].filter(v => v > 0);
       if(inputs.length > 1){ throw new Error('Используйте только один способ указания первого взноса!'); }
 
-      const variants = priceRows.map(row => Object.assign(
-        { label: row.label, cap: row.cap, num: row.num }, computeVariant(row.price, c)));
-      updateUI(mode, variants);
+      /* Каждая площадь × каждая строка прайса */
+      const groups = areas.list.map(a => ({
+        area: a.value, raw: a.raw,
+        variants: priceRows.map(row => Object.assign(
+          { label: row.label, cap: row.cap, num: row.num }, computeVariant(row.price, a.value, c)))
+      }));
+      updateUI(mode, groups, c.maternalCapital);
     }catch(error){ showError(error.message); console.error(error); }
   }
 
-  function updateUI(mode, variants){
+  function updateUI(mode, groups, maternalCapital){
     const complexName = document.getElementById('complexName').value.trim();
-    const area = document.getElementById('area').value;
     const term = document.getElementById('term').value;
-    const maternalCapital = variants[0].maternalCapital;
     const modeText = mode === 'no_markup' ? 'Без наценки на денежный взнос' : 'С наценкой на весь первый взнос';
+    const multiArea = groups.length > 1;
+    const variants = [].concat.apply([], groups.map(g => g.variants));
 
     let mcType = '';
     if(maternalCapital > 0){
@@ -537,10 +583,11 @@
     document.getElementById('installmentHero').textContent = range(variants.map(v => v.installmentFinal));
     document.getElementById('calculationMode').textContent = modeText;
 
-    /* Сводка: ЖК, площадь, срок */
+    /* Сводка: ЖК, площадь (или площади), срок */
+    const areasText = groups.map(g => fmtArea(g.raw) + ' м²').join(' · ');
     const chips = [];
     if(complexName) chips.push(`<div class="chip name"><span class="k">Жилой комплекс</span><span class="v">${esc(complexName)}</span></div>`);
-    chips.push(`<div class="chip"><span class="k">Площадь</span><span class="v">${esc(fmtArea(area))} м²</span></div>`);
+    chips.push(`<div class="chip"><span class="k">${multiArea ? 'Площади' : 'Площадь'}</span><span class="v">${esc(areasText)}</span></div>`);
     if(term) chips.push(`<div class="chip"><span class="k">Срок</span><span class="v">${esc(term)} мес.</span></div>`);
     if(maternalCapital > 0) chips.push(`<div class="chip"><span class="k">Мат. капитал</span><span class="v">${formatCurrency(maternalCapital)}</span></div>`);
     if(activeSvoDiscount > 0) chips.push(`<div class="chip"><span class="k">Скидка СВО</span><span class="v">${activeSvoDiscount}%</span></div>`);
@@ -550,7 +597,7 @@
     const svoRow = v => v.svoDiscountValue > 0
       ? `−${formatCurrency(v.svoDiscountValue)} (${esc(activeSvoLabel)}, ${activeSvoDiscount}%)` : '—';
 
-    document.getElementById('variants').innerHTML = variants.map(v => `
+    const card = v => `
       <div class="variant">
         <div class="v-head">
           <span class="v-floors"><span class="cap">${esc(v.cap)}</span><span class="num">${esc(v.num)}</span></span>
@@ -560,7 +607,7 @@
           <div class="lbl">Ежемесячный платёж</div>
           <div class="big">${formatCurrency(v.monthlyPayment)}</div>
           <div class="sub">${term ? '× ' + term + ' мес.' : ''}</div>
-          <div class="v-area">${complexName ? esc(complexName) + ' · ' : ''}${esc(fmtArea(area))} м² × ${formatNumber(Math.round(v.pricePerSq))} ₽/м²</div>
+          <div class="v-area">${complexName ? esc(complexName) + ' · ' : ''}${esc(fmtArea(v.area))} м² × ${formatNumber(Math.round(v.pricePerSq))} ₽/м²</div>
         </div>
         <div class="rows">
           <div class="row"><span class="k">Общая стоимость</span><span class="v">${formatCurrency(v.totalPrice)}</span></div>
@@ -573,28 +620,39 @@
             ${v.svoDiscountValue > 0 ? `<div class="row"><span class="k">Скидка СВО</span><span class="v">${svoRow(v)}</span></div>` : ''}
           </div>
         </div>
-      </div>`).join('');
+      </div>`;
+
+    document.getElementById('variants').innerHTML = multiArea
+      ? groups.map(g => `
+        <div class="area-group">
+          <div class="area-group-title"><span class="cap">Квартира</span><span class="num">${esc(fmtArea(g.raw))} м²</span></div>
+          ${g.variants.map(card).join('')}
+        </div>`).join('')
+      : variants.map(card).join('');
 
     /* Текст для клиента — удобно отправить в мессенджер */
     const L = [];
     L.push('Palma Properties · Расчёт рассрочки');
     L.push('');
     if(complexName) L.push(`🏢 ${complexName}`);
-    L.push(`📐 Площадь: ${fmtArea(area)} м²`);
+    if(!multiArea) L.push(`📐 Площадь: ${fmtArea(groups[0].raw)} м²`);
     if(term) L.push(`🗓 Срок рассрочки: ${term} мес.`);
     if(maternalCapital > 0) L.push(`👶 Материнский капитал: ${formatCurrency(maternalCapital)}${mcType ? ' (' + mcType + ')' : ''}`);
     if(activeSvoDiscount > 0) L.push(`🎖 Скидка СВО: ${activeSvoDiscount}% (${activeSvoLabel})`);
-    const multi = variants.length > 1;
-    variants.forEach(v => {
-      L.push('');
-      const floorsKnown = v.cap !== 'Вариант';
-      if(multi || floorsKnown) L.push(`▪️ ${v.label} · ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
-      else L.push(`▪️ Цена: ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
-      L.push(`Стоимость квартиры: ${formatCurrency(v.totalPrice)}`);
-      if(v.cashPayment > 0) L.push(`Первый взнос: ${formatCurrency(v.cashPayment)} (${pctOf(v.cashPayment, v.totalPrice)})`);
-      if(v.svoDiscountValue > 0) L.push(`Скидка СВО: −${formatCurrency(v.svoDiscountValue)}`);
-      L.push(`Сумма рассрочки: ${formatCurrency(v.installmentFinal)}`);
-      L.push(`✅ Ежемесячный платёж: ${formatCurrency(v.monthlyPayment)}${term ? ' × ' + term + ' мес.' : ''}`);
+    const multi = groups[0].variants.length > 1;
+    groups.forEach(g => {
+      if(multiArea){ L.push(''); L.push(`📐 Квартира ${fmtArea(g.raw)} м²`); }
+      g.variants.forEach((v, j) => {
+        if(!multiArea || j > 0) L.push('');
+        const floorsKnown = v.cap !== 'Вариант';
+        if(multi || floorsKnown) L.push(`▪️ ${v.label} · ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
+        else L.push(`▪️ Цена: ${formatNumber(Math.round(v.pricePerSq))} ₽/м²`);
+        L.push(`Стоимость квартиры: ${formatCurrency(v.totalPrice)}`);
+        if(v.cashPayment > 0) L.push(`Первый взнос: ${formatCurrency(v.cashPayment)} (${pctOf(v.cashPayment, v.totalPrice)})`);
+        if(v.svoDiscountValue > 0) L.push(`Скидка СВО: −${formatCurrency(v.svoDiscountValue)}`);
+        L.push(`Сумма рассрочки: ${formatCurrency(v.installmentFinal)}`);
+        L.push(`✅ Ежемесячный платёж: ${formatCurrency(v.monthlyPayment)}${term ? ' × ' + term + ' мес.' : ''}`);
+      });
     });
     L.push('');
     L.push('Расчёт предварительный, точные условия уточняйте у менеджера.');
@@ -722,6 +780,29 @@
       refreshDel();
     });
     refreshDel();
+
+    /* Площадь: добавление и удаление строк */
+    const areaRows = document.getElementById('areaRows');
+    const areaFirst = document.getElementById('areaFirstRow');
+    function refreshAreaDel(){
+      const rows = areaRows.querySelectorAll('.area-row');
+      rows.forEach(r => { r.querySelector('.area-del').disabled = rows.length === 1; });
+    }
+    document.getElementById('areaAdd').addEventListener('click', function(){
+      const r = areaFirst.cloneNode(true);
+      r.removeAttribute('id');
+      r.querySelectorAll('input').forEach(i => { i.value = ''; i.addEventListener('wheel', e => e.preventDefault()); });
+      areaRows.appendChild(r);
+      refreshAreaDel();
+      r.querySelector('.area-input').focus();
+    });
+    areaRows.addEventListener('click', function(e){
+      const b = e.target.closest('.area-del');
+      if(!b || b.disabled) return;
+      b.closest('.area-row').remove();
+      refreshAreaDel();
+    });
+    refreshAreaDel();
 
     if(navigator.share && /iPhone|iPad|Android/i.test(navigator.userAgent)) document.getElementById('shareBtn').style.display = 'block';
 
